@@ -1,0 +1,1 @@
+/Users/matlapo/Projects/Iron/blinky/phase4/target/aarch64-none-elf/release/libblinky.a: ext/layout.ld /Users/matlapo/Projects/Iron/blinky/phase4/build.rs ext/crt0.S /Users/matlapo/Projects/Iron/blinky/phase4/src/lib.rs /Users/matlapo/Projects/Iron/blinky/phase4/src/lang_items.rs
