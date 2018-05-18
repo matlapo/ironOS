@@ -2,6 +2,8 @@
 #[derive(Clone, Copy)]
 struct MyType(usize);
 
+struct MyType(u64);
+
 // Note: do not modify this function.
 fn main() {
     let x = MyType(10);

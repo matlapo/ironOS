@@ -6,11 +6,12 @@ enum MyEnum {
     B(String)
 }
 
-fn matcher(val: &MyEnum) -> &str {
-    match *val {
-        MyEnum::A(string) => string.as_str(),
-        MyEnum::B(string) => string.as_str()
-    }
+fn matcher(val: &mut MyEnum) { //-> &str {
+    let y = 
+	    match *val {
+	        MyEnum::A(string) => 4,//string.as_str(),
+	        MyEnum::B(string) => 4//string.as_str()
+	    };
 }
 
 fn main() { }

@@ -2,6 +2,7 @@
 
 mod a {
     pub fn f() { }
+    pub fn f() { }
 }
 
 // Do not modify this function.
