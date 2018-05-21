@@ -71,28 +71,28 @@ impl<'a, T: 'a> StackVec<'a, T> {
 
     /// Extracts a slice containing the entire vector.
     pub fn as_slice(&self) -> &[T] {
-        unimplemented!()
+        &self.storage
     }
 
     /// Extracts a mutable slice of the entire vector.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        unimplemented!()
+        &mut self.storage
     }
 
     /// Returns the number of elements in the vector, also referred to as its
     /// 'length'.
     pub fn len(&self) -> usize {
-        unimplemented!()
+        self.len
     }
 
     /// Returns true if the vector contains no elements.
     pub fn is_empty(&self) -> bool {
-        unimplemented!()
+        self.len == 0
     }
 
     /// Returns true if the vector is at capacity.
     pub fn is_full(&self) -> bool {
-        unimplemented!()
+        self.len == self.storage.len()
     }
 
     /// Appends `value` to the back of this vector if the vector is not full.
@@ -102,7 +102,13 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// If this vector is full, an `Err` is returned. Otherwise, `Ok` is
     /// returned.
     pub fn push(&mut self, value: T) -> Result<(), ()> {
-        unimplemented!()
+        if self.len < self.storage.len() {
+            self.storage[self.len] = value;
+            self.len = self.len + 1;
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -110,7 +116,13 @@ impl<'a, T: Clone + 'a> StackVec<'a, T> {
     /// If this vector is not empty, removes the last element from this vector
     /// by cloning it and returns it. Otherwise returns `None`.
     pub fn pop(&mut self) -> Option<T> {
-        unimplemented!()
+        if self.len != 0 {
+            let v = self.storage[self.len-1].clone();
+            self.len = self.len - 1;
+            Some(v)
+        } else {
+            None
+        }
     }
 }
 
