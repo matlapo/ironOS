@@ -56,7 +56,9 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// greater than the vector's current length, this has no effect. Note that
     /// this method has no effect on the capacity of the vector.
     pub fn truncate(&mut self, len: usize) {
-        unimplemented!()
+        if len <= self.storage.len() {
+            self.len = self.len - len;
+        }
     }
 
     /// Extracts a slice containing the entire vector, consuming `self`.
@@ -64,7 +66,7 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// Note that the returned slice's length will be the length of this vector,
     /// _not_ the length of the original backing storage.
     pub fn into_slice(self) -> &'a mut [T] {
-        unimplemented!()
+        &mut self.storage[0..self.len]
     }
 
     /// Extracts a slice containing the entire vector.
