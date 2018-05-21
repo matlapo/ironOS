@@ -23,7 +23,10 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// store. The returned `StackVec` will be able to hold `storage.len()`
     /// values.
     pub fn new(storage: &'a mut [T]) -> StackVec<'a, T> {
-        unimplemented!()
+        StackVec {
+            len: 0,
+            storage: storage,
+        }
     }
 
     /// Constructs a new `StackVec<T>` using `storage` as the backing store. The
@@ -35,12 +38,18 @@ impl<'a, T: 'a> StackVec<'a, T> {
     ///
     /// Panics if `len > storage.len()`.
     pub fn with_len(storage: &'a mut [T], len: usize) -> StackVec<'a, T> {
-        unimplemented!()
+        if len > storage.len() {
+            panic!("invalid length argument");
+        }
+        StackVec {
+            len: len,
+            storage: storage
+        }
     }
 
     /// Returns the number of elements this vector can hold.
     pub fn capacity(&self) -> usize {
-        unimplemented!()
+        self.storage.len()
     }
 
     /// Shortens the vector, keeping the first `len` elements. If `len` is

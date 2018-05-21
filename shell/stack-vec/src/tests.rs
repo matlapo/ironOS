@@ -2,7 +2,7 @@ use StackVec;
 
 #[test]
 fn assignment_text_example() {
-    let mut storage = [0u8; 1024];
+    let mut storage = [0u8; 1024]; 
     let mut vec = StackVec::new(&mut storage);
 
     for i in 0..10 {
