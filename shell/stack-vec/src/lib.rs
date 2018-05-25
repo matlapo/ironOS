@@ -153,7 +153,6 @@ impl<'a, T: 'a> IntoIterator for StackVec<'a, T> {
     }
 }
 
-
 impl<'a, T: 'a> IntoIterator for &'a StackVec<'a, T> {
     type Item = &'a T;
     type IntoIter = ::core::slice::Iter<'a, T>;
@@ -162,6 +161,3 @@ impl<'a, T: 'a> IntoIterator for &'a StackVec<'a, T> {
         self.storage[0..self.len].into_iter()
     }
 }
-
-// FIXME: Implement `Deref`, `DerefMut`, and `IntoIterator` for `StackVec`.
-// FIXME: Implement IntoIterator` for `&StackVec`.
