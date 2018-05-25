@@ -6,6 +6,7 @@ mod tests;
 
 use core::ops::Deref;
 use core::ops::DerefMut;
+use core::iter::IntoIterator;
 
 /// A contiguous array type backed by a slice.
 ///
@@ -143,12 +144,22 @@ impl<'a, T> DerefMut for StackVec<'a, T> {
     }
 }
 
-impl<'a, T> IntoIterator for StackVec<'a, T> {
-    type Item = T;
-    type IntoIter = IntoIter<T>;
+impl<'a, T: 'a> IntoIterator for StackVec<'a, T> {
+    type Item = &'a T;
+    type IntoIter = ::core::slice::Iter<'a, T>;
 
-    fn into_iter(self) -> Self::IntoIter<T> {
-        &self.storage
+    fn into_iter(self) -> Self::IntoIter {
+        self.storage[0..self.len].into_iter()
+    }
+}
+
+
+impl<'a, T: 'a> IntoIterator for &'a StackVec<'a, T> {
+    type Item = &'a T;
+    type IntoIter = ::core::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.storage[0..self.len].into_iter()
     }
 }
 
