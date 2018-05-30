@@ -134,15 +134,16 @@ impl<'a, T> Deref for StackVec<'a, T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-        &self.storage
+        &self.storage[0..self.len]
     }
 }
 
-impl<'a, T> DerefMut for StackVec<'a, T> {
-    fn deref_mut(&mut self) -> &mut [T] {
-        &mut self.storage
+impl<'a, T: 'a> DerefMut for StackVec<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.storage[0..self.len]
     }
 }
+ 
 
 impl<'a, T: 'a> IntoIterator for StackVec<'a, T> {
     type Item = &'a T;
@@ -152,6 +153,7 @@ impl<'a, T: 'a> IntoIterator for StackVec<'a, T> {
         self.storage[0..self.len].into_iter()
     }
 }
+
 
 impl<'a, T: 'a> IntoIterator for &'a StackVec<'a, T> {
     type Item = &'a T;
