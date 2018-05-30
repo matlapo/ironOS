@@ -134,7 +134,7 @@ impl<'a, T> Deref for StackVec<'a, T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-        &self.storage[0..self.len]
+        &self.storage[0..self.len] //NOT &self.storage !!
     }
 }
 
