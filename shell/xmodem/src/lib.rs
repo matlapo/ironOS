@@ -164,7 +164,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     /// If the bytes match, the byte is returned as an `Ok`. If they differ and
     /// the read byte is not `CAN`, an error of `InvalidData` with the message
     /// `expected` is returned. If they differ and the read byte is `CAN`, an
-    /// error of `ConnectionAborted` is returned. In either case, if they bytes
+    /// error of `ConnectionAborted` is returned. In either case, if they
     /// differ, a `CAN` byte is written out to the inner stream.
     ///
     /// # Errors
@@ -173,7 +173,20 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     /// byte was not `byte`, if the read byte was `CAN` and `byte` is not `CAN`,
     /// or if writing the `CAN` byte failed on byte mismatch.
     fn expect_byte_or_cancel(&mut self, byte: u8, msg: &'static str) -> io::Result<u8> {
-        unimplemented!()
+        
+        let result = Xmodem::read_byte(self, false)?;
+
+        if byte == result { 
+            Ok(byte) 
+        } 
+        else if result == CAN { 
+            Xmodem::write_byte(self, CAN)?; //self.read_byte(CAN);
+            Err(io::Error::new(io::ErrorKind::ConnectionAborted, "received CAN")) 
+        }
+        else { 
+            Xmodem::write_byte(self, CAN)?; 
+            Err(io::Error::new(io::ErrorKind::InvalidData, msg)) 
+        }
     }
 
     /// Reads a single byte from the inner I/O stream and compares it to `byte`.
@@ -188,7 +201,15 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     /// of `ConnectionAborted` is returned. Otherwise, the error kind is
     /// `InvalidData`.
     fn expect_byte(&mut self, byte: u8, expected: &'static str) -> io::Result<u8> {
-        unimplemented!()
+
+        let result = Xmodem::read_byte(self, true);
+        match result {
+            Ok(b) => 
+                if byte == b { Ok(b) } 
+                else if b == CAN { Err(io::Error::new(io::ErrorKind::ConnectionAborted, "received CAN")) }
+                else { Err(io::Error::new(io::ErrorKind::InvalidData, expected)) },
+            Err(e) => Err(e)
+        }
     }
 
     /// Reads (downloads) a single packet from the inner stream using the XMODEM
