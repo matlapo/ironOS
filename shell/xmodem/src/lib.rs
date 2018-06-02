@@ -16,7 +16,7 @@ const CAN: u8 = 0x18;
 
 /// Implementation of the XMODEM protocol.
 pub struct Xmodem<R> {
-    packet: u8,
+    packet: u8, //packet number
     inner: R,
     started: bool,
     progress: ProgressFn
@@ -270,7 +270,54 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     ///
     /// An error of kind `Interrupted` is returned if a packet checksum fails.
     pub fn write_packet(&mut self, buf: &[u8]) -> io::Result<usize> {
-        unimplemented!()
+
+        if buf.len() < 128 && buf.len() != 0 {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "unexpected packet format"));
+        }
+
+        // self.progress = |_: (progress::Progress)| -> () {  };
+        (self.progress)(Progress::Waiting);
+        self.expect_byte(NAK, "expected ACK as first byte")?;
+
+        else if buf.len() == 128 {
+            self.write_byte(SOH)?;
+            self.write_byte(self.packet)?;
+            self.read_byte(true)?;
+            self.write_byte(!self.packet)?;
+            self.read_byte(true)?;
+
+            self.progress = |_: ()| -> Progress { progress::Progress::Started };
+            let mut checksum = 0;
+            for i in 0..128 {
+                self.write_byte(buf[i])?;
+                self.progress = |_: ()| -> Progress { progress::Progress::Packet(i) };
+                checksum += buf[i]; //this is most likely wrong
+            }
+
+            self.write_byte(checksum);
+            let ack = self.read_byte(false)?
+            if ack != ACK {
+                Err(io::Error::new(io::ErrorKind::Interrupted, "checksum failed"))
+            }
+
+            self.write_byte(EOT)?;
+            let done = self.read_byte(true);
+
+            match done {
+                Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "receiver did not respond with NAK")),
+                Ok(byte) =>
+                    if byte == NAK {
+                        //WHAT
+                    } 
+
+            }
+
+        } 
+        else {
+            self.write_byte(EOT)?;
+            Ok(1)
+        }
+
     }
 
     /// Flush this output stream, ensuring that all intermediately buffered

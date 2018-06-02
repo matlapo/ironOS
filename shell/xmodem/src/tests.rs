@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 struct Pipe(Sender<u8>, Receiver<u8>, Vec<u8>);
 
+//so that both sides can send AND receive
 fn pipe() -> (Pipe, Pipe) {
     let ((tx1, rx1), (tx2, rx2)) = (channel(), channel());
     (Pipe(tx1, rx2, vec![]), Pipe(tx2, rx1, vec![]))
@@ -213,7 +214,7 @@ fn test_bad_control() {
 
     let e = Xmodem::new(Cursor::new(vec![0, 0xFF]))
         .read_packet(&mut packet[..])
-        .expect_err("bad contorl");
+        .expect_err("bad control");
 
     assert_eq!(e.kind(), io::ErrorKind::InvalidData);
 }
