@@ -271,51 +271,60 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     /// An error of kind `Interrupted` is returned if a packet checksum fails.
     pub fn write_packet(&mut self, buf: &[u8]) -> io::Result<usize> {
 
+        // if packet is less than 128 bytes and is not empty (=> EOT)
         if buf.len() < 128 && buf.len() != 0 {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "unexpected packet format"));
         }
 
-        // self.progress = |_: (progress::Progress)| -> () {  };
-        (self.progress)(Progress::Waiting);
-        self.expect_byte(NAK, "expected ACK as first byte")?;
+        // if this is the first call to `write_packet`, ensure the transmission is started properly
+        if !self.started {
+            (self.progress)(Progress::Waiting);
+            self.expect_byte(NAK, "expected NAK as first byte")?;
+            self.started = true;
+            (self.progress)(Progress::Started);
+        }
 
-        else if buf.len() == 128 {
+        // if the packet is not empty, transfer it
+        if buf.len() != 0 {
+            let packet = self.packet; //because self is mutably borrowed later
+
+            // as per the XMODEM protocol specifications
             self.write_byte(SOH)?;
-            self.write_byte(self.packet)?;
+            self.write_byte(packet)?;
             self.read_byte(true)?;
-            self.write_byte(!self.packet)?;
+            self.write_byte(!packet)?;
             self.read_byte(true)?;
 
-            self.progress = |_: ()| -> Progress { progress::Progress::Started };
-            let mut checksum = 0;
-            for i in 0..128 {
+            // send the payload and compute/send the checksum
+            (self.progress)(Progress::Started);
+            let mut checksum: u8 = 0;
+            for i in 0..127 {
                 self.write_byte(buf[i])?;
-                self.progress = |_: ()| -> Progress { progress::Progress::Packet(i) };
-                checksum += buf[i]; //this is most likely wrong
+                (self.progress)(Progress::Packet(i as u8));
+                checksum = checksum.wrapping_add(buf[i]);
             }
-
             self.write_byte(checksum);
-            let ack = self.read_byte(false)?
-            if ack != ACK {
-                Err(io::Error::new(io::ErrorKind::Interrupted, "checksum failed"))
-            }
 
-            self.write_byte(EOT)?;
-            let done = self.read_byte(true);
-
+            // check whether the payload was successfully sent or not
+            let done = self.read_byte(true)?;
             match done {
-                Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "receiver did not respond with NAK")),
-                Ok(byte) =>
-                    if byte == NAK {
-                        //WHAT
-                    } 
-
+                ACK => {
+                    (self.progress)(Progress::Packet(self.packet));
+                    self.packet = self.packet.wrapping_add(1);
+                    Ok(buf.len())
+                }
+                NAK => Err(io::Error::new(io::ErrorKind::Interrupted, "checksum failed")),
+                _ => Err(io::Error::new(io::ErrorKind::InvalidData, "expected ACK or NAK")),
             }
-
         } 
+        // end the transmission with 2 handshakes
         else {
             self.write_byte(EOT)?;
-            Ok(1)
+            self.expect_byte(NAK, "expected NAK to end the transmission")?;
+            self.write_byte(EOT)?;
+            self.expect_byte(ACK, "expected ACK to end the transmission")?;
+            self.started = false;
+            return Ok(0);
         }
 
     }
