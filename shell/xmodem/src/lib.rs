@@ -202,7 +202,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     /// `InvalidData`.
     fn expect_byte(&mut self, byte: u8, expected: &'static str) -> io::Result<u8> {
 
-        let result = Xmodem::read_byte(self, true);
+        let result = Xmodem::read_byte(self, false);
         match result {
             Ok(b) => 
                 if byte == b { Ok(b) } 
@@ -249,30 +249,28 @@ impl<T: io::Read + io::Write> Xmodem<T> {
 
         let byte = self.read_byte(true)?;
         if byte == SOH {
-            if self.read_byte(true)? != self.packet {
-                self.write_byte(CAN)?;
-            }
-            if self.read_byte(true)? != !self.packet {
-                self.write_byte(CAN)?;
-            }
+            let number = self.packet;
+            self.expect_byte_or_cancel(number, "invalid packet number")?;
+            self.expect_byte_or_cancel(!number, "packet checksum failed")?;
         }
         else if byte == EOT {
             self.write_byte(NAK)?;
             self.expect_byte(EOT, "expected EOT byte")?;
             self.write_byte(ACK)?;
+            self.started = false;
             return Ok(0);
         }
         else {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "expected SOH or EOT byte"));
         }
 
-        let mut checksum = 0;
-        for i in 0..127 {
-            buf[i] = self.read_byte(true)?;
-            checksum = (checksum + buf[i]) % 256;
+        let mut checksum: u8 = 0;
+        for byte in buf {
+            *byte = self.read_byte(false)?;
+            checksum = checksum.wrapping_add(*byte);
         }
 
-        if checksum != self.read_byte(true)? {
+        if checksum != self.read_byte(false)? {
             self.write_byte(NAK)?;
             return Err(io::Error::new(io::ErrorKind::Interrupted, "checksum failed"));
         } else {
@@ -281,7 +279,6 @@ impl<T: io::Read + io::Write> Xmodem<T> {
             self.write_byte(ACK)?;
             return Ok(128);
         }
-
     }
 
 
@@ -337,18 +334,24 @@ impl<T: io::Read + io::Write> Xmodem<T> {
             // as per the XMODEM protocol specifications
             self.write_byte(SOH)?;
             self.write_byte(packet)?;
-            self.read_byte(true)?;
             self.write_byte(!packet)?;
-            self.read_byte(true)?;
 
             // send the payload and compute/send the checksum
             (self.progress)(Progress::Started);
+
+            // let mut checksum: u8 = 0;
+            // for i in 0..127 {
+            //     self.write_byte(buf[i])?;
+            //     checksum = checksum.wrapping_add(buf[i]);
+            // }
+            // self.write_byte(checksum)?;
+
             let mut checksum: u8 = 0;
-            for i in 0..127 {
-                self.write_byte(buf[i])?;
-                checksum = (checksum + buf[i]) % 256;
+            for byte in buf.into_iter() {
+                self.write_byte(*byte)?;
+                checksum = checksum.wrapping_add(*byte);
             }
-            self.write_byte(checksum);
+            self.write_byte(checksum)?;
 
             // check whether the payload was successfully sent or not
             let done = self.read_byte(true)?;
