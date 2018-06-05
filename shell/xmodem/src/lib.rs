@@ -236,8 +236,54 @@ impl<T: io::Read + io::Write> Xmodem<T> {
     ///
     /// An error of kind `UnexpectedEof` is returned if `buf.len() < 128`.
     pub fn read_packet(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!()
+
+        if buf.len() < 128 {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid packet format"));
+        }
+        
+        if !self.started {
+            self.write_byte(NAK)?;
+            self.started = true;
+            (self.progress)(Progress::Started);
+        }
+
+        let byte = self.read_byte(true)?;
+        if byte == SOH {
+            if self.read_byte(true)? != self.packet {
+                self.write_byte(CAN)?;
+            }
+            if self.read_byte(true)? != !self.packet {
+                self.write_byte(CAN)?;
+            }
+        }
+        else if byte == EOT {
+            self.write_byte(NAK)?;
+            self.expect_byte(EOT, "expected EOT byte")?;
+            self.write_byte(ACK)?;
+            return Ok(0);
+        }
+        else {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "expected SOH or EOT byte"));
+        }
+
+        let mut checksum = 0;
+        for i in 0..127 {
+            buf[i] = self.read_byte(true)?;
+            checksum = (checksum + buf[i]) % 256;
+        }
+
+        if checksum != self.read_byte(true)? {
+            self.write_byte(NAK)?;
+            return Err(io::Error::new(io::ErrorKind::Interrupted, "checksum failed"));
+        } else {
+            (self.progress)(Progress::Packet(self.packet));
+            self.packet = self.packet.wrapping_add(1);
+            self.write_byte(ACK)?;
+            return Ok(128);
+        }
+
     }
+
 
     /// Sends (uploads) a single packet to the inner stream using the XMODEM
     /// protocol. If `buf` is empty, end of transmissions is sent. Users of this
@@ -300,8 +346,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
             let mut checksum: u8 = 0;
             for i in 0..127 {
                 self.write_byte(buf[i])?;
-                (self.progress)(Progress::Packet(i as u8));
-                checksum = checksum.wrapping_add(buf[i]);
+                checksum = (checksum + buf[i]) % 256;
             }
             self.write_byte(checksum);
 
