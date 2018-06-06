@@ -47,6 +47,10 @@ struct Opt {
     raw: bool,
 }
 
+ fn progress_fn(progress: Progress) {
+    println!("Progress: {:?}", progress);
+}
+
 fn main() {
     use std::fs::File;
     use std::io::{self, BufReader, BufRead};
@@ -54,5 +58,30 @@ fn main() {
     let opt = Opt::from_args();
     let mut serial = serial::open(&opt.tty_path).expect("path points to invalid TTY");
 
-    // FIXME: Implement the `ttywrite` utility.
+    let mut settings = serial.read_settings().expect("could not read settings from TTY");
+
+    settings.set_baud_rate(opt.baud_rate).expect("invalid baud rate value");
+    settings.set_char_size(opt.char_width);
+    settings.set_flow_control(opt.flow_control);
+    settings.set_stop_bits(opt.stop_bits);
+
+    let seconds = Duration::new(opt.timeout, 0);
+    serial.set_timeout(seconds);
+
+    serial.write_settings(&settings).expect("unable to update settings");
+    
+    match opt.raw {
+        true =>
+            match opt.input {
+                Some(path) => 
+                    // let mut file = File::open(path)?;
+                    // io::copy(&mut file, &mut serial).expect("could not transfer raw data to file");
+                    (),
+                None => 
+                    ()
+            }
+        false => ()
+    }
+
+    // Xmodem::transmit_with_progress(data, to, progress_fn)
 }
