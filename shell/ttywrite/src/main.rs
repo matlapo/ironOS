@@ -73,15 +73,31 @@ fn main() {
     match opt.raw {
         true =>
             match opt.input {
-                Some(path) => 
-                    // let mut file = File::open(path)?;
-                    // io::copy(&mut file, &mut serial).expect("could not transfer raw data to file");
-                    (),
-                None => 
-                    ()
+                Some(path) => {
+                    let mut file = File::open(path).expect("find not found");
+                    io::copy(&mut file, &mut serial).expect("could not transfer raw data to file");
+                }
+                None => {
+                    let mut file = io::stdin();
+                    io::copy(&mut file, &mut serial).expect("could not transfer data to stdin");
+                }
+            },
+        false => 
+            match opt.input {
+                Some(path) => {
+                    let mut file = File::open(path).expect("find not found");
+                    match Xmodem::transmit_with_progress(file, &mut serial, progress_fn) {
+                        Ok(_) => return,
+                        Err(e) => panic!("Error: {:?}", e),
+                    }
+                },
+                None => {
+                    let mut file = io::stdin();
+                    match Xmodem::transmit_with_progress(file, &mut serial, progress_fn) {
+                        Ok(_) => return,
+                        Err(e) => panic!("Error: {:?}", e),
+                    }
+                }
             }
-        false => ()
-    }
-
-    // Xmodem::transmit_with_progress(data, to, progress_fn)
+    } 
 }
