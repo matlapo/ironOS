@@ -4,7 +4,16 @@ use common::{IO_BASE, states};
 use volatile::prelude::*;
 use volatile::{Volatile, WriteVolatile, ReadVolatile, Reserved};
 
-/// An alternative GPIO function.
+/// An alternative GPIO function
+// example for Pin 9 (i.e FSEL9, which is bits 29-27 of register 0)
+// 000 = GPIO Pin 9 is an input
+// 001 = GPIO Pin 9 is an output
+// 100 = GPIO Pin 9 takes alternate function 0
+// 101 = GPIO Pin 9 takes alternate function 1
+// 110 = GPIO Pin 9 takes alternate function 2
+// 111 = GPIO Pin 9 takes alternate function 3
+// 011 = GPIO Pin 9 takes alternate function 4
+// 010 = GPIO Pin 9 takes alternate function 5 
 #[repr(u8)]
 pub enum Function {
     Input = 0b000,
@@ -17,6 +26,11 @@ pub enum Function {
     Alt5 = 0b010
 }
 
+// each FSEL is 32 bits, hence we need 6 registers to cover all 51 pins (3 bits per pin)
+// SET: set the nth GPIO pin corresponding to the nth bit in the GPSET register (1 sets, 0 = no effect)
+// CLR: clears the nth pin (1 clears, 0 no effect)
+// LEV: returns the value of the nth pin
+// ...rising/falling edge stuff that I don't care about for now
 #[repr(C)]
 #[allow(non_snake_case)]
 struct Registers {
@@ -102,7 +116,16 @@ impl Gpio<Uninitialized> {
     /// Enables the alternative function `function` for `self`. Consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-        unimplemented!()
+        let index: usize = (self.pin / 10) as usize; // find which register
+        let shift: usize = (self.pin as usize - index * 10) * 3; // find the bits
+
+        {
+            let register: &mut Volatile<u32> = &mut self.registers.FSEL[index]; // get the register
+            let read: u32 = register.read(); // read its value
+            register.write(read & !(0b111 << shift) | ((function as u32) << shift)); // set it
+        }
+
+        self.transition() // actual HW transition done, reflect the change
     }
 
     /// Sets this pin to be an _output_ pin. Consumes self and returns a `Gpio`
