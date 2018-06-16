@@ -113,16 +113,18 @@ impl Gpio<Uninitialized> {
         }
     }
 
-    /// Enables the alternative function `function` for `self`. Consumes self
+    /// Changes pin's function, consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-        let index: usize = (self.pin / 10) as usize; // find which register
-        let shift: usize = (self.pin as usize - index * 10) * 3; // find the bits
+        let select_register = (self.pin / 10) as usize; // find which register
+        // (pin - floor(pin/10)*10) * 3 bits
+        let shift = (self.pin as usize - select_register * 10) * 3;
 
         {
-            let register: &mut Volatile<u32> = &mut self.registers.FSEL[index]; // get the register
-            let read: u32 = register.read(); // read its value
+            let register = &mut self.registers.FSEL[select_register]; // get the register
+            let read = register.read(); // read its value
             register.write(read & !(0b111 << shift) | ((function as u32) << shift)); // set it
+
         }
 
         self.transition() // actual HW transition done, reflect the change
@@ -144,12 +146,16 @@ impl Gpio<Uninitialized> {
 impl Gpio<Output> {
     /// Sets (turns on) the pin.
     pub fn set(&mut self) {
-        unimplemented!()
+        let x = if self.pin < 32 { 0 } else { 1 };
+        let register = &mut self.registers.SET[x];
+        register.write(1 << (self.pin % 32));
     }
 
     /// Clears (turns off) the pin.
     pub fn clear(&mut self) {
-        unimplemented!()
+        let x = if self.pin < 32 { 0 } else { 1 };
+        let register = &mut self.registers.CLR[x];
+        register.write(1 << (self.pin % 32));
     }
 }
 
