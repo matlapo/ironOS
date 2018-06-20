@@ -23,7 +23,26 @@ enum LsrStatus {
 #[repr(C)]
 #[allow(non_snake_case)]
 struct Registers {
-    // FIXME: Declare the "MU" registers from page 8.
+    AUX_MU_IO_REG: Volatile<u8>,
+    __r0: [Reserved<u8>; 3],
+    AUX_MU_IER_REG: Volatile<u8>,
+    __r1: [Reserved<u8>; 3],
+    AUX_MU_IIR_REG: Volatile<u8>,
+    __r2: [Reserved<u8>; 3],
+    AUX_MU_LCR_REG: Volatile<u8>,
+    __r3: [Reserved<u8>; 3],
+    AUX_MU_MCR_REG: Volatile<u8>,
+    __r4: [Reserved<u8>; 3],
+    AUX_MU_LSR_REG: ReadVolatile<u8>,
+    __r5: [Reserved<u8>; 3],
+    AUX_MU_MSR_REG: ReadVolatile<u8>,
+    __r6: [Reserved<u8>; 3],
+    AUX_MU_SCRATCH: Volatile<u8>,
+    __r7: [Reserved<u8>; 3],
+    AUX_MU_CNTL_REG: Volatile<u8>,
+    __r8: [Reserved<u8>; 3],
+    AUX_MU_STAT_REG: ReadVolatile<u32>,
+    AUX_MU_BAUD: Volatile<u16>
 }
 
 /// The Raspberry Pi's "mini UART".
@@ -47,8 +66,23 @@ impl MiniUart {
             &mut *(MU_REG_BASE as *mut Registers)
         };
 
-        // FIXME: Implement remaining mini UART initialization.
-        unimplemented!()
+        let mut read = registers.AUX_MU_LCR_REG.read();
+        registers.AUX_MU_LCR_REG.write(read | 0b00000011); // set data frame size to 8 bits
+
+        // ok not sure about baudrate
+        registers.AUX_MU_BAUD.write(135);
+
+        Gpio::new(14 as u8).into_alt(Function::Alt5);
+        Gpio::new(15 as u8).into_alt(Function::Alt5);
+
+        // enable UART transmitter and receiver
+        read = registers.AUX_MU_CNTL_REG.read();
+        registers.AUX_MU_CNTL_REG.write(read | (0b11 as u8));
+
+        MiniUart {
+            registers: registers,
+            timeout: None 
+        }
     }
 
     /// Set the read timeout to `milliseconds` milliseconds.
