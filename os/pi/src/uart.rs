@@ -87,20 +87,21 @@ impl MiniUart {
 
     /// Set the read timeout to `milliseconds` milliseconds.
     pub fn set_read_timeout(&mut self, milliseconds: u32) {
-        unimplemented!()
+        self.timeout = Some(milliseconds);
     }
 
     /// Write the byte `byte`. This method blocks until there is space available
     /// in the output FIFO.
     pub fn write_byte(&mut self, byte: u8) {
-        unimplemented!()
+        while (self.registers.AUX_MU_STAT_REG.read() & 0b10) == 0 { }
+        self.registers.AUX_MU_IO_REG.write(byte);
     }
 
     /// Returns `true` if there is at least one byte ready to be read. If this
     /// method returns `true`, a subsequent call to `read_byte` is guaranteed to
     /// return immediately. This method does not block.
     pub fn has_byte(&self) -> bool {
-        unimplemented!()
+        (self.registers.AUX_MU_STAT_REG.read() & (0b1 << 8)) == 0
     }
 
     /// Blocks until there is a byte ready to read. If a read timeout is set,
