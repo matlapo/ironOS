@@ -93,7 +93,7 @@ impl MiniUart {
     /// Write the byte `byte`. This method blocks until there is space available
     /// in the output FIFO.
     pub fn write_byte(&mut self, byte: u8) {
-        while (self.registers.AUX_MU_STAT_REG.read() & 0b10) == 0 { }
+        while (self.registers.AUX_MU_LSR_REG.read() & (LsrStatus::TxAvailable as u8)) == 0 { }
         self.registers.AUX_MU_IO_REG.write(byte);
     }
 
@@ -101,7 +101,7 @@ impl MiniUart {
     /// method returns `true`, a subsequent call to `read_byte` is guaranteed to
     /// return immediately. This method does not block.
     pub fn has_byte(&self) -> bool {
-        (self.registers.AUX_MU_STAT_REG.read() & (0b1 << 8)) == 0
+        (self.registers.AUX_MU_LSR_REG.read() & (LsrStatus::DataReady as u8)) == 1
     }
 
     /// Blocks until there is a byte ready to read. If a read timeout is set,
@@ -113,22 +113,41 @@ impl MiniUart {
     /// returns `Ok(())`, a subsequent call to `read_byte` is guaranteed to
     /// return immediately.
     pub fn wait_for_byte(&self) -> Result<(), ()> {
-        unimplemented!()
+        let start = timer::current_time();
+        match self.timeout {
+            Some(t) => 
+                loop {
+                    if self.has_byte() { 
+                        return Ok(()); 
+                    }
+                    else if (start - timer::current_time()) < (t as u64) * 1000 {
+                        continue;
+                    }
+                    else {
+                        return Err(());
+                    }
+                }
+            None => if self.has_byte() { return Ok(()); } else { return Err(()); }
+        }
     }
 
     /// Reads a byte. Blocks indefinitely until a byte is ready to be read.
     pub fn read_byte(&mut self) -> u8 {
-        unimplemented!()
+        while !self.has_byte() {}
+        self.registers.AUX_MU_IO_REG.read()
     }
 }
 
-// FIXME: Implement `fmt::Write` for `MiniUart`. A b'\r' byte should be written
-// before writing any b'\n' byte.
+//A b'\r' byte should be written before writing any b'\n' byte.
+impl fmt::Write for MiniUart {
+    
+}
 
 #[cfg(feature = "std")]
 mod uart_io {
     use std::io;
     use super::MiniUart;
+
 
     // FIXME: Implement `io::Read` and `io::Write` for `MiniUart`.
     //
