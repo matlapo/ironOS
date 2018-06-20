@@ -138,9 +138,23 @@ impl MiniUart {
     }
 }
 
-//A b'\r' byte should be written before writing any b'\n' byte.
+// A b'\r' byte should be written before writing any b'\n' byte.
 impl fmt::Write for MiniUart {
-    
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for b in s.bytes() {
+            match b {
+                b'\n' =>
+                    {
+                        self.write_byte(b'\r');
+                        self.write_byte(b'\n');
+                    },
+                _ => 
+                    { self.write_byte(b); }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(feature = "std")]
@@ -148,9 +162,6 @@ mod uart_io {
     use std::io;
     use super::MiniUart;
 
-
-    // FIXME: Implement `io::Read` and `io::Write` for `MiniUart`.
-    //
     // The `io::Read::read()` implementation must respect the read timeout by
     // waiting at most that time for the _first byte_. It should not wait for
     // any additional bytes but _should_ read as many bytes as possible. If the
@@ -158,4 +169,30 @@ mod uart_io {
     //
     // The `io::Write::write()` method must write all of the requested bytes
     // before returning.
+
+    impl io::Read for MiniUart {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            match self.wait_for_byte() {
+                Ok(_) => {
+                    for i in buf {
+                        if self.has_byte() {
+                            buf[i] = self.read_byte();
+                        } else {
+                            return Ok(());
+                        }
+                    }
+                },
+                Err(_) => { return Err(io::Error::new(io::ErrorKind::TimedOut, "UART `read` operation timed out")) }
+            }
+        }
+    }
+
+    impl io::Write for MiniUart {
+        fn write(&mut self, buf: &[u8]) -> Result<usize> {
+            for b in buf {
+                self.write_byte(*b); // TODO: self.write_byte(b); 
+            }
+            Ok(buf.length())
+        }
+    }
 }
