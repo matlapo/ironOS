@@ -1,5 +1,6 @@
 use stack_vec::StackVec;
 use console::{kprint, kprintln, CONSOLE};
+use std::str;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -43,5 +44,24 @@ impl<'a> Command<'a> {
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) -> ! {
-    unimplemented!()
+    // let mut uart = MiniUart::new();
+    loop {
+        let mut storage = [0u8; 512];
+        let mut input = StackVec::new(&mut storage);
+        kprint!("{}", prefix);
+        loop {
+            let byte = CONSOLE.lock().read_byte();
+            // if this byte is the end of the input
+            if byte == b'\n' || byte == b'\r' {
+                let mut arguments: [&str; 64] = [""; 64];
+                let result = Command::parse(str::from_utf8(input.into_slice()).unwrap(), &mut arguments);
+
+                // check if errors
+
+            } else {
+                // let result = input.push(byte);
+            }
+        }
+
+    }
 }

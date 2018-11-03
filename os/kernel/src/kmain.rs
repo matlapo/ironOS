@@ -21,6 +21,7 @@ pub mod shell;
 use pi::uart::MiniUart;
 use pi::gpio::Gpio;
 use pi::timer::Timer;
+use console::Console;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
@@ -49,6 +50,8 @@ pub extern "C" fn kmain() {
 
     let mut uart = MiniUart::new();
     let mut activity_led = Gpio::new(16).into_output();
+
+
     loop {
         let byte = uart.read_byte();
 		// uart.write_str("<-");
@@ -57,6 +60,9 @@ pub extern "C" fn kmain() {
         activity_led.set();
         pi::timer::spin_sleep_ms(25);
         activity_led.clear();
+
+        console::kprintln!("Hello");
+
     }
 
 }
