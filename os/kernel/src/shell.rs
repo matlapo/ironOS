@@ -37,31 +37,55 @@ impl<'a> Command<'a> {
 
     /// Returns this command's path. This is equivalent to the first argument.
     fn path(&self) -> &str {
-        unimplemented!()
+        self.args[0]
     }
 }
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
-pub fn shell(prefix: &str) -> ! {
-    // let mut uart = MiniUart::new();
-    loop {
-        let mut storage = [0u8; 512];
-        let mut input = StackVec::new(&mut storage);
+pub fn shell(prefix: &str) {
+    let mut storage = [0u8; 512];
+    let mut input = StackVec::new(&mut storage);
+    // loop {
         kprint!("{}", prefix);
         loop {
             let byte = CONSOLE.lock().read_byte();
-            // if this byte is the end of the input
-            if byte == b'\n' || byte == b'\r' {
-                let mut arguments: [&str; 64] = [""; 64];
-                let result = Command::parse(str::from_utf8(input.into_slice()).unwrap(), &mut arguments);
+            kprint!("{}", byte as char); //vs &byte?
 
-                // check if errors
+            kprintln!("{}", input.len());
+
+            if input.is_empty() {
+                kprintln!("TEST ZERO");
+            }
+
+            if byte == 0x08 || byte == 0x7f {
+                if input.len() != 0 {
+                    kprint!("{}", 0x08 as char);
+                    kprint!(" ");
+                    kprint!("{}", 0x08 as char);
+                }
+            }
+
+            // if this byte is the end of the input
+            else if byte == b'\n' || byte == b'\r' {
+                kprintln!("");
+                let mut arguments: [&str; 64] = [""; 64];
+                let result = Command::parse(str::from_utf8(&input).unwrap(), &mut arguments);
+
+                match result {
+                    Ok(_) => { kprintln!("HOURA"); },
+                    Err(_) => { kprintln!("BOOO"); }
+                }
+
+                kprint!("{}", prefix);
 
             } else {
-                // let result = input.push(byte);
+                let result = input.push(byte);
+                match result {
+                    Ok(_) => { () },
+                    Err(_) => { kprintln!("ERROR"); } // input too large
+                }
             }
         }
-
-    }
+    // }
 }
