@@ -62,6 +62,7 @@ pub extern "C" fn kmain() {
         // pi::timer::spin_sleep_ms(25);
         // activity_led.clear();
 
+        pi::timer::spin_sleep_ms(2000); 
         console::kprintln!("Starting test...");
         shell("> ")
 

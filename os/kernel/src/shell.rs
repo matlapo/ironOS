@@ -52,31 +52,43 @@ pub fn shell(prefix: &str) {
             let byte = CONSOLE.lock().read_byte();
             kprint!("{}", byte as char); //vs &byte?
 
-            kprintln!("{}", input.len());
+            // kprintln!("LENGTH IS {}", input.len());
 
-            if input.is_empty() {
-                kprintln!("TEST ZERO");
-            }
-
-            if byte == 0x08 || byte == 0x7f {
+            if byte == 0x00 {
+                // do nothing
+            } 
+            else if byte == 0x08 || byte == 0x7f {
                 if input.len() != 0 {
                     kprint!("{}", 0x08 as char);
                     kprint!(" ");
                     kprint!("{}", 0x08 as char);
-                }
+                    input.pop();
+                } 
             }
 
             // if this byte is the end of the input
             else if byte == b'\n' || byte == b'\r' {
                 kprintln!("");
-                let mut arguments: [&str; 64] = [""; 64];
-                let result = Command::parse(str::from_utf8(&input).unwrap(), &mut arguments);
-
-                match result {
-                    Ok(_) => { kprintln!("HOURA"); },
-                    Err(_) => { kprintln!("BOOO"); }
+    
+                {
+                    let mut arguments: [&str; 64] = [""; 64]; // need to be inside this scope
+                    match Command::parse(str::from_utf8(&input).unwrap(), &mut arguments) {
+                        Ok(_) => { kprintln!("YAY"); }
+                        Err(_) => { kprintln!("BOO"); }
+                    }
                 }
+                // let result = {
+                //     let t = &input;
+                //     Command::parse(str::from_utf8(t).unwrap(), &mut arguments)
+                // };
 
+                // match result {
+                //     Ok(_) => { kprintln!("HOURA"); },
+                //     Err(_) => { kprintln!("BOOO"); }
+                // }
+
+                let len = input.len();
+                input.truncate(len);
                 kprint!("{}", prefix);
 
             } else {
