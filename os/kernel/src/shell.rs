@@ -53,7 +53,7 @@ pub fn shell(prefix: &str) {
             kprint!("{}", byte as char); //vs &byte?
 
             if byte == 0x00 {
-                // do nothing
+                // ignore these bytes, I don't know where they come from
             } 
             else if byte == 0x08 || byte == 0x7f {
                 if input.len() != 0 {
@@ -63,21 +63,34 @@ pub fn shell(prefix: &str) {
                     input.pop();
                 } 
             }
-
             // if this byte is the end of the input
             else if byte == b'\n' || byte == b'\r' {
                 kprintln!("");
                 let mut arguments: [&str; 64] = [""; 64]; // need to be inside this scope
                 match Command::parse(str::from_utf8(&input).unwrap(), &mut arguments) {
-                    Ok(_) => { kprintln!("YAY"); }
-                    Err(_) => { kprintln!("BOO"); }
+                    Ok(command) => { 
+                        match command.path() {
+                            "echo" => { 
+                                for i in 1..command.args.len() {
+                                    kprint!("{} ", command.args[i]);
+                                }
+                                kprintln!("");
+                            }
+                            _ => { kprintln!("Error: unknown command: {}", command.path()); }
+                        }
+                    },
+                    Err(Error::Empty) => { () },
+                    Err(Error::TooManyArgs) => { kprintln!("\nError: too many arguments", ) }
                 }
                 break;
             } else {
                 let result = input.push(byte);
                 match result {
                     Ok(_) => { () },
-                    Err(_) => { kprintln!("ERROR"); } // input too large
+                    Err(_) => { 
+                        kprintln!("\nError: input is over 512 bytes long"); 
+                        break;
+                    }
                 }
             }
         }
