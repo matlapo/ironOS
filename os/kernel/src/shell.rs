@@ -44,15 +44,13 @@ impl<'a> Command<'a> {
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns: it is perpetually in a shell loop.
 pub fn shell(prefix: &str) {
-    let mut storage = [0u8; 512];
-    let mut input = StackVec::new(&mut storage);
-    // loop {
+    loop {
         kprint!("{}", prefix);
+        let mut storage = [0u8; 512];
+        let mut input = StackVec::new(&mut storage);
         loop {
             let byte = CONSOLE.lock().read_byte();
             kprint!("{}", byte as char); //vs &byte?
-
-            // kprintln!("LENGTH IS {}", input.len());
 
             if byte == 0x00 {
                 // do nothing
@@ -69,28 +67,12 @@ pub fn shell(prefix: &str) {
             // if this byte is the end of the input
             else if byte == b'\n' || byte == b'\r' {
                 kprintln!("");
-    
-                {
-                    let mut arguments: [&str; 64] = [""; 64]; // need to be inside this scope
-                    match Command::parse(str::from_utf8(&input).unwrap(), &mut arguments) {
-                        Ok(_) => { kprintln!("YAY"); }
-                        Err(_) => { kprintln!("BOO"); }
-                    }
+                let mut arguments: [&str; 64] = [""; 64]; // need to be inside this scope
+                match Command::parse(str::from_utf8(&input).unwrap(), &mut arguments) {
+                    Ok(_) => { kprintln!("YAY"); }
+                    Err(_) => { kprintln!("BOO"); }
                 }
-                // let result = {
-                //     let t = &input;
-                //     Command::parse(str::from_utf8(t).unwrap(), &mut arguments)
-                // };
-
-                // match result {
-                //     Ok(_) => { kprintln!("HOURA"); },
-                //     Err(_) => { kprintln!("BOOO"); }
-                // }
-
-                let len = input.len();
-                input.truncate(len);
-                kprint!("{}", prefix);
-
+                break;
             } else {
                 let result = input.push(byte);
                 match result {
@@ -99,5 +81,5 @@ pub fn shell(prefix: &str) {
                 }
             }
         }
-    // }
+    }
 }
