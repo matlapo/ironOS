@@ -4,7 +4,7 @@ SUBMISSION_SITE := $(BASE_URL)/assignments/submission/
 SUBMIT_TAR := $(ASSIGNMENT_NAME).tar.gz
 
 CS140E_REL_ROOT := ..
-REPO_NAMES := 0-blinky 1-shell os
+REPO_NAMES := blinky shell os
 QUESTIONS_DIRS := $(shell find . -type d -name "questions")
 
 .PHONY: all test check submission clean

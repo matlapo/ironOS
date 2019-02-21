@@ -9,7 +9,7 @@ pub mod lang_items;
 const BINARY_START_ADDR: usize = 0x80000;
 const BOOTLOADER_START_ADDR: usize = 0x4000000;
 
-/// Pointer to where the loaded binary expects to be loaded.
+/// Pointer to where the loaded binary expects to be laoded.
 const BINARY_START: *mut u8 = BINARY_START_ADDR as *mut u8;
 
 /// Free space between the bootloader and the loaded binary's start address.
@@ -22,7 +22,6 @@ fn jump_to(addr: *mut u8) -> ! {
         loop { asm!("nop" :::: "volatile")  }
     }
 }
-
 
 /// idea 1: load kernel in 128 bytes chunks, write chunk to memory starting at 0x80000
 /// idea 2: load everything at once and write everything at once as well

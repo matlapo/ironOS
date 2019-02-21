@@ -19,41 +19,35 @@ impl Console {
     /// Initializes the console if it's not already initialized.
     #[inline]
     fn initialize(&mut self) {
-        if self.inner.is_none() {
-            self.inner = Some (MiniUart::new())
-        }
+        unimplemented!()
     }
 
     /// Returns a mutable borrow to the inner `MiniUart`, initializing it as
     /// needed.
     fn inner(&mut self) -> &mut MiniUart {
-        if self.inner.is_none() {
-            self.initialize();
-        }
-
-        self.inner.as_mut().unwrap()
+        unimplemented!()
     }
 
     /// Reads a byte from the UART device, blocking until a byte is available.
     pub fn read_byte(&mut self) -> u8 {
-        self.inner().read_byte()
+        unimplemented!()
     }
 
     /// Writes the byte `byte` to the UART device.
     pub fn write_byte(&mut self, byte: u8) {
-        self.inner().write_byte(byte);
+        unimplemented!()
     }
 }
 
 impl io::Read for Console {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner().read(buf) // uses the io::Read of MiniUart
+        unimplemented!()
     }
 }
 
 impl io::Write for Console {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.inner().write(buf)
+        unimplemented!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -63,7 +57,7 @@ impl io::Write for Console {
 
 impl fmt::Write for Console {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.inner().write_str(s)
+        unimplemented!()
     }
 }
 
@@ -73,9 +67,15 @@ pub static CONSOLE: Mutex<Console> = Mutex::new(Console::new());
 /// Internal function called by the `kprint[ln]!` macros.
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use std::fmt::Write;
-    let mut console = CONSOLE.lock();
-    console.write_fmt(args).unwrap();
+    #[cfg(not(test))]
+    {
+        use std::fmt::Write;
+        let mut console = CONSOLE.lock();
+        console.write_fmt(args).unwrap();
+    }
+
+    #[cfg(test)]
+    { print!("{}", args); }
 }
 
 /// Like `println!`, but for kernel-space.

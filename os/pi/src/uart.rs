@@ -145,11 +145,23 @@ impl fmt::Write for MiniUart {
     }
 }
 
+// FIXME: Implement `fmt::Write` for `MiniUart`. A b'\r' byte should be written
+// before writing any b'\n' byte.
 
 #[cfg(feature = "std")]
 mod uart_io {
     use std::io;
     use super::MiniUart;
+
+    // FIXME: Implement `io::Read` and `io::Write` for `MiniUart`.
+    //
+    // The `io::Read::read()` implementation must respect the read timeout by
+    // waiting at most that time for the _first byte_. It should not wait for
+    // any additional bytes but _should_ read as many bytes as possible. If the
+    // read times out, an error of kind `TimedOut` should be returned.
+    //
+    // The `io::Write::write()` method must write all of the requested bytes
+    // before returning.
 
     impl io::Read for MiniUart {
         /// Waits until the timeout duration but data to arrive, and then reads

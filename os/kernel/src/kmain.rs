@@ -6,17 +6,32 @@
 #![feature(decl_macro)]
 #![feature(repr_align)]
 #![feature(attr_literals)]
+#![feature(exclusive_range_pattern)]
+#![feature(i128_type)]
 #![feature(never_type)]
-#![feature(ptr_internals)]
-#![feature(pointer_methods)] //remove me
+#![feature(unique)]
+#![feature(pointer_methods)]
+#![feature(naked_functions)]
+#![feature(fn_must_use)]
+#![feature(alloc, allocator_api, global_allocator)]
 
+#[macro_use]
+#[allow(unused_imports)]
+extern crate alloc;
 extern crate pi;
 extern crate stack_vec;
+extern crate fat32;
 
+pub mod allocator;
 pub mod lang_items;
 pub mod mutex;
 pub mod console;
 pub mod shell;
+pub mod fs;
+pub mod traps;
+pub mod aarch64;
+pub mod process;
+pub mod vm;
 
 use pi::uart::MiniUart;
 use pi::gpio::Gpio;
@@ -24,30 +39,24 @@ use pi::timer::Timer;
 use console::Console;
 use shell::shell;
 
+#[cfg(not(test))]
+use allocator::Allocator;
+use fs::FileSystem;
+use process::GlobalScheduler;
+
+#[cfg(not(test))]
+#[global_allocator]
+pub static ALLOCATOR: Allocator = Allocator::uninitialized();
+
+pub static FILE_SYSTEM: FileSystem = FileSystem::uninitialized();
+
+pub static SCHEDULER: GlobalScheduler = GlobalScheduler::uninitialized();
+
 #[no_mangle]
+#[cfg(not(test))]
 pub extern "C" fn kmain() {
+    // ALLOCATOR.initialize();
 
-	//TEST #2
-	// let mut pin16 = pi::gpio::Gpio::new(16 as u8).into_output();
-	// loop {
-	// 	pin16.set();
-	// 	pi::timer::spin_sleep_ms(1000);
-	// 	pin16.clear();
-	// 	pi::timer::spin_sleep_ms(1000);
-	// }
-
-	// let mut loading_leds = [
-    //     Gpio::new(16).into_output(),
-    //     // Gpio::new(6).into_output(),
-    //     // Gpio::new(13).into_output(),
-    //     // Gpio::new(19).into_output(),
-    //     // Gpio::new(26).into_output()
-	// ];
-
-    // for ref mut led in loading_leds.iter_mut() {
-    //     led.set();
-    //     spin_sleep_ms(100);
-    // }
 
     let mut uart = MiniUart::new();
     let mut activity_led = Gpio::new(16).into_output();
@@ -62,10 +71,7 @@ pub extern "C" fn kmain() {
         // pi::timer::spin_sleep_ms(25);
         // activity_led.clear();
 
-        pi::timer::spin_sleep_ms(2000); 
-        console::kprintln!("Starting test...");
-        shell("> ")
-
-    // }
-
+    pi::timer::spin_sleep_ms(2000); 
+    console::kprintln!("Starting test...");
+    shell("> ")
 }
