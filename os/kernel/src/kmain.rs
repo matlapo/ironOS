@@ -61,16 +61,6 @@ pub extern "C" fn kmain() {
     let mut uart = MiniUart::new();
     let mut activity_led = Gpio::new(16).into_output();
 
-
-    // loop {
-        // let byte = uart.read_byte();
-		// // uart.write_str("<-");
-        // uart.write_byte(byte);
-
-        // activity_led.set();
-        // pi::timer::spin_sleep_ms(25);
-        // activity_led.clear();
-
     pi::timer::spin_sleep_ms(2000); 
     console::kprintln!("Starting test...");
     shell("> ")
