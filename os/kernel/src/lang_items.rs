@@ -1,8 +1,32 @@
+use console::kprintln;
+
 #[no_mangle]
 #[cfg(not(test))]
 #[lang = "panic_fmt"]
 pub extern fn panic_fmt(fmt: ::std::fmt::Arguments, file: &'static str, line: u32, col: u32) -> ! {
-    // FIXME: Print `fmt`, `file`, and `line` to the console.
+
+    let pi = r#"            (
+       (      )     )
+         )   (    (
+        (          `
+    .-""^"""^""^"""^""-.
+  (//\\//\\//\\//\\//\\//)
+   ~\^^^^^^^^^^^^^^^^^^/~
+     `================`
+
+    The pi is overdone.
+
+---------- PANIC ----------"#;
+
+    kprintln!("{}", pi);
+
+    kprintln!("FILE: {}", file);
+    kprintln!("LINE: {}", line);
+    kprintln!("COL: {}", col);
+    kprintln!("");
+    
+    kprintln!("{}", fmt);
+    
 
     loop { unsafe { asm!("wfe") } }
 }
